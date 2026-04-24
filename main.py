@@ -5,12 +5,10 @@ import cv2
 
 app = FastAPI()
 
-# LIGHT + STABLE model (NOT v5 pipeline)
 ocr = PaddleOCR(
     use_angle_cls=True,
     lang='en',
-    show_log=False,
-    use_gpu=False
+    show_log=False
 )
 
 @app.post("/ocr")
@@ -25,8 +23,7 @@ async def ocr_api(file: UploadFile = File(...)):
     text = []
     if result:
         for line in result:
-            if line:
-                for word in line:
-                    text.append(word[1][0])
+            for word in line:
+                text.append(word[1][0])
 
     return {"text": " ".join(text)}
