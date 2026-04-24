@@ -5,43 +5,36 @@ from paddleocr import PaddleOCR
 
 app = FastAPI()
 
-# Global OCR object (loaded once)
-ocr = None
-
-
-# Load model once at startup (IMPORTANT for Render)
-@app.on_event("startup")
-def load_model():
-    global ocr
-    ocr = PaddleOCR(
-        use_angle_cls=False,   # IMPORTANT: cls removed in v3
-        lang="en"              # change if needed
-    )
-
+# Load model ONCE at startup (very important for Render stability)
+ocr = PaddleOCR(use_angle_cls=False, lang='en')
 
 @app.get("/")
 def home():
-    return {"status": "OCR API is running 🚀"}
-
+    return {"status": "OCR API is running"}
 
 @app.post("/ocr")
 async def ocr_api(file: UploadFile = File(...)):
-    global ocr
-
     # Read image
     image_bytes = await file.read()
+
+    # Convert to numpy array
     np_arr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-    # Run OCR (NO cls in v3)
+    # Run OCR (NO cls, NO show_log)
     result = ocr.ocr(img)
 
-    # Extract text cleanly
-    texts = []
-    for line in result[0]:
-        texts.append(line[1][0])
+    # Format response cleanly
+    output = []
+    for line in result:
+        for word_info in line:
+            text = word_info[1][0]
+            confidence = float(word_info[1][1])
+            output.append({
+                "text": text,
+                "confidence": confidence
+            })
 
     return {
-        "text": texts,
-        "raw": result
+        "results": output
     }
