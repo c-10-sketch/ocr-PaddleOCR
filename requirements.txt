@@ -3,5 +3,5 @@ uvicorn
 numpy
 opencv-python-headless
 paddleocr
-paddlepaddle==3.0.0
+paddlepaddle
 python-multipart
