@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 paddleocr==2.7.3
 opencv-python-headless
-numpy
+numpy==1.26.4
