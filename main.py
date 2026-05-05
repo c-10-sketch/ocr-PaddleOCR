@@ -5,8 +5,11 @@ from paddleocr import PaddleOCR
 
 app = FastAPI()
 
-# Load model ONCE at startup (very important for Render stability)
-ocr = PaddleOCR(use_angle_cls=False, lang='en')
+ocr = PaddleOCR(
+    use_angle_cls=False,
+    lang='en',
+    show_log=False
+)
 
 @app.get("/")
 def home():
@@ -14,27 +17,25 @@ def home():
 
 @app.post("/ocr")
 async def ocr_api(file: UploadFile = File(...)):
-    # Read image
     image_bytes = await file.read()
 
-    # Convert to numpy array
     np_arr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-    # Run OCR (NO cls, NO show_log)
+    if img is None:
+        return {"error": "Invalid image"}
+
+    # 🔥 speed optimization
+    img = cv2.resize(img, None, fx=0.6, fy=0.6)
+
     result = ocr.ocr(img)
 
-    # Format response cleanly
     output = []
     for line in result:
         for word_info in line:
-            text = word_info[1][0]
-            confidence = float(word_info[1][1])
             output.append({
-                "text": text,
-                "confidence": confidence
+                "text": word_info[1][0],
+                "confidence": float(word_info[1][1])
             })
 
-    return {
-        "results": output
-    }
+    return {"results": output}
